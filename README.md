@@ -1,1 +1,1 @@
-# Yay-Raider
+token.txtにYay!のtokenを記載
