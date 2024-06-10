@@ -10,7 +10,6 @@ import itertools
 import threading
 import time
 
-
 init()
 
 async def join_group(session, group_id, token):
@@ -32,7 +31,15 @@ async def fetch_group_members(session, group_id, token):
         async with session.get(url, headers=headers) as response:
             if response.status == 200:
                 data = await response.json()
-                return [{"id": member["user"]["id"], "nickname": member["user"]["nickname"]} for member in data["group_users"]]
+                members = [{"id": member["user"]["id"], "nickname": member["user"]["nickname"]} for member in data["group_users"]]
+                
+                os.makedirs('scraped', exist_ok=True)
+                file_path = os.path.join('scraped', f"{group_id}.txt")
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    for member in members:
+                        f.write(f"{member['id']}, {member['nickname']}\n")
+                
+                return members
             else:
                 print(f"Failed to fetch group members. Status Code: {response.status}")
                 return []
@@ -90,6 +97,20 @@ async def leave_group(session, group_id, token):
     except Exception as e:
         print(f"An error occurred: {e}")
 
+async def createthread(session, group_id, token, title):
+    headers = {"Authorization": f"Bearer {token}"}
+    url = "https://api.yay.space/v1/threads"
+    json_data = {
+        "title": title,
+        "group_id": group_id,
+    }
+    try:
+        async with session.post(url, headers=headers, json=json_data) as response:
+            response_text = await response.text()
+            print(f"Thread Create Status Code: {response.status}, Response: {response_text}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
 async def joiner(tokens, group_id):
     async with aiohttp.ClientSession() as session:
         for token in tokens:
@@ -117,6 +138,13 @@ async def checker(tokens):
             await tokenchecker(session, token)
             await asyncio.sleep(0.2)
 
+async def createThread(tokens, group_id, title, num):
+    async with aiohttp.ClientSession() as session:
+        for _ in range(num):
+            token = random.choice(tokens)
+            await createthread(session, group_id, token, title)
+            await asyncio.sleep(0.3)
+
 def display_menu():
     menu = [
         "╭────────────────────────────────────────────────────────────────────────────────────────────────╮",
@@ -124,7 +152,7 @@ def display_menu():
         "│ «02» Leaver            «07» ???                «12» ???                 «17» ???               │",
         "│ «03» Spammer           «08» ???                «13» ???                 «18» ???               │",
         "│ «04» TokenChecker      «09» ???                «14» ???                 «19» ???               │",
-        "│ «05» ???               «10» ???                «15» ???                 «20» ???               │",
+        "│ «05» createThread      «10» ???                «15» ???                 «20» ???               │",
         "╰────────────────────────────────────────────────────────────────────────────────────────────────╯"
     ]
     for line in menu:
@@ -136,9 +164,7 @@ def spinner():
             break
         print(f'\rPress Enter to continue... {c}', end='', flush=True)
         time.sleep(0.2)
-        os.system('cls' if os.name == 'nt' else 'clear')
     print('\rPress Enter to continue... ', end='', flush=True)
-    os.system('cls' if os.name == 'nt' else 'clear')
 
 async def main():
     while True:
@@ -154,8 +180,9 @@ async def main():
         display_menu()
         choice = input(f"{Fore.CYAN}Select Choice: {Fore.RESET}")
         
-        group_id = input(f"{Fore.CYAN}Input Group ID: {Fore.RESET}")
-
+        if choice in ['1', '2', '3', '5']:
+            group_id = input(f"{Fore.CYAN}Input Group ID: {Fore.RESET}")
+        
         if choice == '1':
             os.system('cls' if os.name == 'nt' else 'clear')
             text = "Yay! Joiner"
@@ -187,6 +214,15 @@ async def main():
             ascii_art = pyfiglet.figlet_format(text, font=font)
             print(Fore.MAGENTA + ascii_art + Fore.RESET)
             await checker(tokens)
+        elif choice == '5':
+            os.system('cls' if os.name == 'nt' else 'clear')
+            text = "Yay! CreateThreader"
+            font = "slant"
+            ascii_art = pyfiglet.figlet_format(text, font=font)
+            print(Fore.MAGENTA + ascii_art + Fore.RESET)
+            title = input(f"{Fore.CYAN}Title Input: {Fore.RESET}")
+            num = int(input(f"{Fore.CYAN}Num Thread: {Fore.RESET}"))
+            await createThread(tokens, group_id, title, num)
         else:
             print("Invalid Selection")
 
@@ -197,6 +233,8 @@ async def main():
         input()
         spinner_active = False
         t.join()
+
+        os.system('cls' if os.name == 'nt' else 'clear')
 
 if __name__ == "__main__":
     asyncio.run(main())
