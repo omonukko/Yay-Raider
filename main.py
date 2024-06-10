@@ -66,9 +66,9 @@ async def send_message(session, group_id, member, base_message, token):
     try:
         async with session.post(url, headers=headers, json=post_data) as response:
             response_text = await response.text()
-            print(f"Message Status Code: {response.status}, Response: {response_text}")
+            print(f"{Fore.CYAN}Message Status Code: {response.status}, Response: {response_text}{Fore.RESET}")
             if response.status != 201:
-                print(f"Failed to send message. Status Code: {response.status}")
+                print(f"{Fore.CYAN}Failed to send message. Status Code: {response.status}{Fore.RESET}")
     except Exception as e:
         print(f"An error occurred: {e}")
 
@@ -79,9 +79,27 @@ async def tokenchecker(session, token):
         async with session.get(url, headers=headers) as response:
             response_text = await response.text()
             if response.status == 200:
-                print(f'Token Valid: {token}')
+                print(f'{Fore.CYAN}Token Valid: {token}{Fore.RESET}')
             else:
-                print(f'Invalid Token: {token}, Status Code: {response.status}, Response: {response_text}')
+                print(f'{Fore.CYAN}Invalid Token: {token}, Status Code: {response.status}, Response: {response_text}{Fore.RESET}')
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+async def report(session, group_id, reason, token):
+    url = f"https://api.yay.space/v3/groups/{group_id}/report"
+    headers = {"Authorization": f"Bearer {token}"}
+    json_data = {
+        "category_id": 0,
+        "groupId": group_id,
+        "reason": reason
+    }
+    try:
+        async with session.post(url, headers=headers, json=json_data) as response:
+            response_text = await response.text()
+            if response.status == 200:
+                print(f'{Fore.CYAN}Success Reported! Response: {response_text}{Fore.RESET}')
+            else:
+                print(f'{Fore.CYAN}Failed Report Status Code: {response.status}, Response: {response_text}{Fore.RESET}')
     except Exception as e:
         print(f"An error occurred: {e}")
 
@@ -112,19 +130,22 @@ async def createthread(session, group_id, token, title):
         print(f"An error occurred: {e}")
 
 async def joiner(tokens, group_id):
-    async with aiohttp.ClientSession() as session:
+    user_agent = "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Mobile Safari/537.36"
+    async with aiohttp.ClientSession(headers={"User-Agent": user_agent}) as session:
         for token in tokens:
             await join_group(session, group_id, token)
             await asyncio.sleep(1)
 
 async def leaver(tokens, group_id):
-    async with aiohttp.ClientSession() as session:
+    user_agent = "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Mobile Safari/537.36"
+    async with aiohttp.ClientSession(headers={"User-Agent": user_agent}) as session:
         for token in tokens:
             await leave_group(session, group_id, token)
             await asyncio.sleep(1)
 
 async def spammer(tokens, group_id, base_message, num_messages, mention_random_member):
-    async with aiohttp.ClientSession() as session:
+    user_agent = "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Mobile Safari/537.36"
+    async with aiohttp.ClientSession(headers={"User-Agent": user_agent}) as session:
         members = await fetch_group_members(session, group_id, random.choice(tokens))
         for _ in range(num_messages):
             token = random.choice(tokens)
@@ -133,22 +154,31 @@ async def spammer(tokens, group_id, base_message, num_messages, mention_random_m
             await asyncio.sleep(0.3)
 
 async def checker(tokens):
-    async with aiohttp.ClientSession() as session:
+    user_agent = "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Mobile Safari/537.36"
+    async with aiohttp.ClientSession(headers={"User-Agent": user_agent}) as session:
         for token in tokens:
             await tokenchecker(session, token)
             await asyncio.sleep(0.2)
 
 async def createThread(tokens, group_id, title, num):
-    async with aiohttp.ClientSession() as session:
+    user_agent = "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Mobile Safari/537.36"
+    async with aiohttp.ClientSession(headers={"User-Agent": user_agent}) as session:
         for _ in range(num):
             token = random.choice(tokens)
             await createthread(session, group_id, token, title)
             await asyncio.sleep(0.3)
 
+async def reportstart(tokens, group_id, reason):
+    user_agent = "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.106 Mobile Safari/537.36"
+    async with aiohttp.ClientSession(headers={"User-Agent": user_agent}) as session:
+        for token in tokens:
+            await report(session, group_id, reason, token)
+            await asyncio.sleep(0.2)
+
 def display_menu():
     menu = [
         "╭────────────────────────────────────────────────────────────────────────────────────────────────╮",
-        "│ «01» Joiner            «06» ???                «11» ???                 «16» ???               │",
+        "│ «01» Joiner            «06» Reporter           «11» ???                 «16» ???               │",
         "│ «02» Leaver            «07» ???                «12» ???                 «17» ???               │",
         "│ «03» Spammer           «08» ???                «13» ???                 «18» ???               │",
         "│ «04» TokenChecker      «09» ???                «14» ???                 «19» ???               │",
@@ -180,7 +210,7 @@ async def main():
         display_menu()
         choice = input(f"{Fore.CYAN}Select Choice: {Fore.RESET}")
         
-        if choice in ['1', '2', '3', '5']:
+        if choice in ['1', '2', '3', '5','6']:
             group_id = input(f"{Fore.CYAN}Input Group ID: {Fore.RESET}")
         
         if choice == '1':
@@ -223,6 +253,14 @@ async def main():
             title = input(f"{Fore.CYAN}Title Input: {Fore.RESET}")
             num = int(input(f"{Fore.CYAN}Num Thread: {Fore.RESET}"))
             await createThread(tokens, group_id, title, num)
+        elif choice == '6':
+            os.system('cls' if os.name == 'nt' else 'clear')
+            text = "Yay! Reporter"
+            font = "slant"
+            ascii_art = pyfiglet.figlet_format(text, font=font)
+            print(Fore.MAGENTA + ascii_art + Fore.RESET)
+            reason = input(f"{Fore.CYAN}Reason for Report: {Fore.RESET}")
+            await reportstart(tokens, group_id, reason)
         else:
             print("Invalid Selection")
 
